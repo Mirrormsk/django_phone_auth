@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -30,9 +31,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
-    "crispy_forms",
-    "crispy_bootstrap5",
 
     "users",
 
@@ -119,6 +117,16 @@ CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
 
 CRONJOBS = [
     ('*/1 * * * *', 'mailings.tasks.check_mailing_list'),
@@ -144,3 +152,4 @@ if CACHE_ENABLED:
         }
     }
 
+SMS_VERIFICATION_RESEND_TIMEOUT = env('SMS_VERIFICATION_RESEND_TIMEOUT')
