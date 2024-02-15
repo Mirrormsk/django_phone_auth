@@ -14,7 +14,7 @@ urlpatterns = [
     path('token/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', MyTokenRefreshView.as_view(), name='token_refresh'),
     path('api/login/', LoginAPIView.as_view(), name='api_login'),
-    path('verify/', VerifyAPIView.as_view(), name='verify'),
+    path('api/verify/', VerifyAPIView.as_view(), name='verify'),
     path("login/", LoginView.as_view(), name="login"),
     path("detail/<int:pk>", UserDetailView.as_view(), name="detail")
 ] + router.urls
