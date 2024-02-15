@@ -3,7 +3,7 @@ import uuid
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from users.services.code_generator import generate_random_code
+from users.services.code_generator import CodeGenerator
 
 NULLABLE = {'blank': True, 'null': True}
 
@@ -18,7 +18,9 @@ class User(AbstractUser):
     otp_code = models.CharField(max_length=4, verbose_name='одноразовый код подтверждения', **NULLABLE)
     is_active = models.BooleanField(default=False, verbose_name='активен')
     last_code_sent_time = models.DateTimeField(verbose_name='последняя отправка кода', **NULLABLE)
+    invite_code = models.CharField(max_length=6, verbose_name='инвайт-код', **NULLABLE)
+    invited_by = models.ForeignKey('self', on_delete=models.SET_NULL, verbose_name='пригласил', **NULLABLE,
+                                   related_name='invited_users')
 
     USERNAME_FIELD = "phone"
     REQUIRED_FIELDS = []
-
