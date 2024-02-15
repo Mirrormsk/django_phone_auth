@@ -23,8 +23,19 @@ class UserSerializer(serializers.ModelSerializer):
 class UserLoginSerializer(serializers.Serializer):
     phone = serializers.CharField(
         max_length=12,
-        style={'input_type': 'number', 'placeholder': 'Телефон'}
+        style={'input_type': 'number', 'placeholder': 'Телефон'}, validators=[validate_phone]
     )
+
+    def to_internal_value(self, data):
+        data = super().to_internal_value(data)
+
+        phone = data.get('phone')
+        if phone and phone.startswith('+'):
+            data['phone'] = phone[1:]
+        if phone.startswith('8'):
+            data['phone'] = f"7{phone[1:]}"
+
+        return data
 
 
 class VerifyPhoneSerializer(serializers.Serializer):
