@@ -1,0 +1,24 @@
+#phone-input {
+    width: 100%;
+    height: 50px;
+    font-size: 20px;
+}
+
+#keyboard {
+    width: 80%;
+    margin-top: 20px;
+}
+
+.key {
+    width: 100px; /* Увеличиваем ширину кнопок */
+    height: 100px; /* Увеличиваем высоту кнопок */
+    font-size: 20px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.key:hover {
+    background-color: #e0e0e0;
+}
