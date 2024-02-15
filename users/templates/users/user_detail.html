@@ -1,0 +1,46 @@
+{% extends 'users/base.html' %}
+{% load rest_framework %}
+
+{% block body %}
+    <body>
+    <div class="container">
+        <h1>Profile - {{ user.phone }}</h1>
+
+        <form action="{% url 'users:detail' pk=user.pk %}" method="POST">
+            {% csrf_token %}
+            {% render_form serializer template_pack='rest_framework/horizontal' %}
+            <input type="submit" value="Save">
+        </form>
+    </div>
+
+
+{% endblock %}
+{% block script %}
+    <script>
+        var storedAccessToken = localStorage.getItem('accessToken');
+        var storedRefreshToken = localStorage.getItem('refreshToken');
+
+        if (accessToken && refreshToken) {
+            // Формирование заголовков с токенами
+            var headers = new Headers();
+            headers.append('Authorization', 'Bearer ' + storedAccessToken);
+            headers.append('X-Refresh-Token', storedRefreshToken);
+            // Использование токенов в запросе
+            {#fetch('https://your-api-endpoint.com/protected-resource', {#}
+            {#    method: 'GET',#}
+            {#    headers: {#}
+            {#        'Authorization': 'Bearer ' + storedAccessToken,#}
+            {#        'Content-Type': 'application/json'#}
+            {#    }#}
+            {#})
+        #}
+        {#    .then(response => response.json())#}
+        {#    .then(data => {#}
+        {#        // Обработка ответа#}
+        {#    })#}
+        {#    .catch(error => {#}
+        {#        // Обработка ошибки#}
+        {#    });#}
+    </script>
+
+{% endblock %}
