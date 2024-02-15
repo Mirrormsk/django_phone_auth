@@ -41,6 +41,7 @@ class LoginAPIView(APIView):
                     properties={
                         'message': openapi.Schema(type=openapi.TYPE_STRING, description='Сообщение'),
                         'status': openapi.Schema(type=openapi.TYPE_STRING, description='Статус операции'),
+                        'otp_code': openapi.Schema(type=openapi.TYPE_STRING, description='Код подтверждения'),
                     },
                     required=['message', 'status'],
                 ),
@@ -80,12 +81,40 @@ class LoginAPIView(APIView):
         sms_service = MySMSService()
         send_verification_sms(user, sms_service=sms_service)
 
-        return Response({'message': 'Code was be sent by sms', 'status': "success"}, status=status.HTTP_200_OK)
+        return Response({'message': 'Code was be sent by sms', 'status': "success", "otp_code": otp_code}, status=status.HTTP_200_OK)
 
 
 class VerifyAPIView(APIView):
     serializer_class = VerifyPhoneSerializer
 
+    @swagger_auto_schema(
+        request_body=VerifyPhoneSerializer,
+        responses={
+            200: openapi.Response(
+                description="Authorization successful",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description='Сообщение'),
+                        'user_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID пользователя'),
+                        'tokens': openapi.Schema(type=openapi.TYPE_OBJECT, description='Токены'),
+                        'status': openapi.Schema(type=openapi.TYPE_STRING, description='Статус операции'),
+                    },
+                    required=['message', 'user_id', 'tokens', 'status'],
+                ),
+            ),
+            403: openapi.Response(
+                description="Invalid code",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description='Сообщение об ошибке'),
+                    },
+                    required=['message'],
+                ),
+            ),
+        },
+    )
     def post(self, request: Request, *args, **kwargs):
 
         serializer = VerifyPhoneSerializer(data=request.data)
@@ -104,7 +133,7 @@ class VerifyAPIView(APIView):
             user.otp_code = None
             user.is_active = True
             user.save()
-            return Response({'message': 'authorize successful', "tokens": tokens, "status": "success"},
+            return Response({'message': 'authorize successful', "user_id": user.pk, "tokens": tokens, "status": "success"},
                             status=status.HTTP_200_OK)
         else:
             return Response({'message': 'Invalid code'}, status=status.HTTP_403_FORBIDDEN)
@@ -120,18 +149,24 @@ class UserViewSet(viewsets.ModelViewSet):
     def input_invite(self, request, pk=None):
         user = self.get_object()
 
+        if user.invited_by:
+            return Response({'message': 'You are already have applied invite code'}, status=status.HTTP_403_FORBIDDEN)
+
         serializer = InputInviteCodeSerializer(data=request.data)
-        if serializer.is_valid():
-            invite_code = serializer.validated_data.get('invite_code')
-            referrer = UserService.find_user_by_invite_code(invite_code)
-            if referrer:
-                user.invited_by = referrer
-                user.save()
-                return Response({'message': 'Invite code successfully applied'}, status=status.HTTP_200_OK)
-            else:
-                return Response({'message': 'Invalid Invite Code'}, status=status.HTTP_400_BAD_REQUEST)
-        else:
+
+        if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        invite_code = serializer.validated_data.get('invite_code')
+        referrer = UserService.find_user_by_invite_code(invite_code)
+        if referrer:
+            user.invited_by = referrer
+            user.save()
+            return Response({'message': 'Invite code successfully applied'}, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'Invalid Invite Code'}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 class LoginView(APIView):
