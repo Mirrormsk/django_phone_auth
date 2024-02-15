@@ -32,7 +32,7 @@ class UserLoginSerializer(serializers.Serializer):
         phone = data.get('phone')
         if phone and phone.startswith('+'):
             data['phone'] = phone[1:]
-        if phone.startswith('8'):
+        if phone and phone.startswith('8'):
             data['phone'] = f"7{phone[1:]}"
 
         return data
@@ -41,6 +41,17 @@ class UserLoginSerializer(serializers.Serializer):
 class VerifyPhoneSerializer(serializers.Serializer):
     phone = serializers.CharField(validators=[validate_phone])
     otp_code = serializers.CharField()
+
+    def to_internal_value(self, data):
+        data = super().to_internal_value(data)
+
+        phone = data.get('phone')
+        if phone and phone.startswith('+'):
+            data['phone'] = phone[1:]
+        if phone and phone.startswith('8'):
+            data['phone'] = f"7{phone[1:]}"
+
+        return data
 
 
 class InputInviteCodeSerializer(serializers.Serializer):
