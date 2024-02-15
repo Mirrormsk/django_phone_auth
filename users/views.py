@@ -1,23 +1,23 @@
 from django.shortcuts import redirect
-from django.views.generic import TemplateView
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from rest_framework.renderers import TemplateHTMLRenderer
 
 from users.models import User
+from users.permissions import IsOwner
 from users.serializers import MyTokenObtainPairSerializer, UserSerializer, UserLoginSerializer, VerifyPhoneSerializer, \
     InputInviteCodeSerializer
-from users.services.code_generator import CodeGenerator
 from users.services.get_token import get_tokens_for_user
-from users.services.sms import send_verification_sms
+from users.services.sms import send_verification_sms, MySMSService
 from users.services.users import UserService
-from users.validators import validate_phone
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -31,10 +31,44 @@ class MyTokenRefreshView(TokenRefreshView):
 class LoginAPIView(APIView):
     serializer_class = UserLoginSerializer
 
+    @swagger_auto_schema(
+        request_body=UserLoginSerializer,
+        responses={
+            200: openapi.Response(
+                description="Successful operation",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, description='Сообщение'),
+                        'status': openapi.Schema(type=openapi.TYPE_STRING, description='Статус операции'),
+                    },
+                    required=['message', 'status'],
+                ),
+            ),
+
+            400: openapi.Response(
+                description="Bad request",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'status': openapi.Schema(type=openapi.TYPE_STRING, description='Статус операции'),
+                        'error': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Schema(type=openapi.TYPE_STRING),
+                                                description='Ошибки валидации'),
+                    },
+                    required=['status', 'error'],
+                ),
+            ),
+        },
+    )
     def post(self, request: Request, *args, **kwargs):
 
-        phone = request.data.get('phone')
-        phone = validate_phone(phone)
+        serializer = self.serializer_class(data=request.data)
+
+        if not serializer.is_valid():
+            return Response({'status': "error", 'error': serializer.errors.values()},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        phone = serializer.validated_data.get('phone')
 
         user, created = User.objects.get_or_create(phone=phone)
 
@@ -42,8 +76,9 @@ class LoginAPIView(APIView):
             UserService.set_unique_invite_code(user)
 
         otp_code = UserService.set_otp_code(user)
-        print(otp_code)
-        send_verification_sms(user)
+
+        sms_service = MySMSService()
+        send_verification_sms(user, sms_service=sms_service)
 
         return Response({'message': 'Code was be sent by sms', 'status': "success"}, status=status.HTTP_200_OK)
 
@@ -55,44 +90,31 @@ class VerifyAPIView(APIView):
 
         serializer = VerifyPhoneSerializer(data=request.data)
 
-        if serializer.is_valid():
-            phone = serializer.validated_data["phone"]
-            otp_code = serializer.validated_data["otp_code"]
+        if not serializer.is_valid():
+            return Response({"message": "bad request", "status": "error", "error": serializer.errors.values()},
+                            status=status.HTTP_400_BAD_REQUEST)
 
-            user = get_object_or_404(User, phone=phone)
+        phone = serializer.validated_data["phone"]
+        otp_code = serializer.validated_data["otp_code"]
 
-            if user.otp_code and user.otp_code == otp_code:
-                tokens = get_tokens_for_user(user)
-                user.otp_code = None
-                user.is_active = True
-                user.save()
-                return Response({'message': 'authorize successful', "tokens": tokens, "status": "success"}, status=status.HTTP_200_OK)
-            return Response({'message': 'Invalid code'}, status=status.HTTP_403_FORBIDDEN)
+        user = get_object_or_404(User, phone=phone)
+
+        if user.otp_code and user.otp_code == otp_code:
+            tokens = get_tokens_for_user(user)
+            user.otp_code = None
+            user.is_active = True
+            user.save()
+            return Response({'message': 'authorize successful', "tokens": tokens, "status": "success"},
+                            status=status.HTTP_200_OK)
         else:
-            print(serializer.errors)
-            return Response({"message": "bad request"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Invalid code'}, status=status.HTTP_403_FORBIDDEN)
 
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwner]
     lookup_field = 'pk'
-
-    def get_serializer_class(self):
-
-        if self.action == "retrieve":
-            user = self.request.user
-            instance = self.get_object()
-            if instance == user:
-                return UserSerializer
-            return UserSerializer
-
-        elif self.action == "list":
-            return UserSerializer
-
-        elif self.action in ["create", "update", "partial_update", "destroy"]:
-            return UserSerializer
 
     @action(detail=True, methods=['post'])
     def input_invite(self, request, pk=None):
