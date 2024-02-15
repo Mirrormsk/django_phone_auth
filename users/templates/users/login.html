@@ -86,12 +86,12 @@
                                         document.querySelector('#verification-code-input').style.display = 'block';
                                     } else {
                                         // Обработка ошибки
-                                        alert('Ошибка:' + data.message);
+                                        alert('Ошибка 1:' + data.error);
                                     }
                                 })
                                 .catch(error => {
                                     // Обработка ошибки AJAX-запроса
-                                    alert('Ошибка:' + error);
+                                    alert('Ошибка:' + data.error);
                                 });
                         });
 
@@ -117,7 +117,8 @@
                                         let parsedToken = parseJwt(token);
                                         console.log(parsedToken);
                                         console.log(data.tokens.access)
-                                        alert('Код проверки успешно подтвержден');
+                                        alert('Код проверки успешно подтвержден!' +
+                                            '\nAccess token: ' + token);
                                         localStorage.setItem('accessToken', data.tokens.access);
                                         localStorage.setItem('refreshToken', data.tokens.refresh);
 
