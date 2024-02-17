@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import timedelta
 from pathlib import Path
@@ -17,7 +18,7 @@ SECRET_KEY = env('SECRET_KEY')
 
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = json.loads(os.getenv("ALLOWED_HOSTS"))
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -98,12 +99,12 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
-
-STATICFILES_DIRS = (
-    BASE_DIR / 'static',
-)
-
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+if DEBUG:
+    STATICFILES_DIRS = (
+        BASE_DIR / "static",
+    )
+else:
+    STATIC_ROOT = BASE_DIR / 'static'
 
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
@@ -152,3 +153,4 @@ if CACHE_ENABLED:
     }
 
 SMS_VERIFICATION_RESEND_TIMEOUT = env('SMS_VERIFICATION_RESEND_TIMEOUT')
+SMS_SERVICE = env('SMS_SERVICE')
