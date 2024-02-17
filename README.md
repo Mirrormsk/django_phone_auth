@@ -6,7 +6,7 @@
 Клонируйте проект в свою рабочую директорию.
 
 ```bash
-git clone link
+git clone git@github.com:Mirrormsk/django_phone_auth.git
 ```
 
 ## Docker
