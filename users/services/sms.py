@@ -10,7 +10,7 @@ from users.models import User
 logger = logging.getLogger(__name__)
 
 
-class SMSService(ABC):
+class AbstractSMSService(ABC):
     """Abstract base class for SMS service"""
 
     @abstractmethod
@@ -18,7 +18,7 @@ class SMSService(ABC):
         pass
 
 
-class MySMSService(SMSService):
+class FakeSMSService(AbstractSMSService):
     """Fake SMS service"""
     def send_sms(self, to: str, message: str) -> None:
         print(f"Sending message to {to}: {message}")
@@ -29,11 +29,11 @@ def time_since_code_sent(user: User, now: datetime.datetime) -> datetime.timedel
     return delta
 
 
-def send_verification_sms(user: User, sms_service: SMSService) -> None:
+def send_verification_sms(user: User, sms_service: AbstractSMSService) -> None:
     """Sends verification sms to user"""
 
-    if not isinstance(sms_service, SMSService):
-        raise AttributeError("SMS-Service must be an instance of SMSService")
+    if not isinstance(sms_service, AbstractSMSService):
+        raise AttributeError("SMS-Service must be an instance of AbstractSMSService")
 
     now = timezone.localtime(timezone.now())
 
