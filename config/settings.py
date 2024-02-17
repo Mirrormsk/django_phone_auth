@@ -142,15 +142,5 @@ LOGOUT_REDIRECT_URL = '/'
 
 LOGIN_URL = reverse_lazy('users:login')
 
-CACHE_ENABLED = env('CACHE_ENABLED')
-
-if CACHE_ENABLED:
-    CACHES = {
-        "default": {
-            "BACKEND": env('CACHE_BACKEND'),
-            "LOCATION": env('CACHE_LOCATION'),
-        }
-    }
-
 SMS_VERIFICATION_RESEND_TIMEOUT = env('SMS_VERIFICATION_RESEND_TIMEOUT')
 SMS_SERVICE = env('SMS_SERVICE')
