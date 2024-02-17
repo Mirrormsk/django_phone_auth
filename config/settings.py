@@ -128,13 +128,6 @@ SIMPLE_JWT = {
 
 }
 
-CRONJOBS = [
-    ('*/1 * * * *', 'mailings.tasks.check_mailing_list'),
-]
-
-CRONTAB_DJANGO_SETTINGS = 'config.settings'
-CRONTAB_COMMAND_SUFFIX = "2>&1"
-
 AUTH_USER_MODEL = 'users.User'
 
 LOGIN_REDIRECT_URL = '/'
