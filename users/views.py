@@ -79,10 +79,12 @@ class LoginAPIView(APIView):
             UserService.set_unique_invite_code(user)
 
         otp_code = UserService.set_otp_code(user)
-
-        SMS_Service = import_string(settings.SMS_SERVICE)
-        sms_service = SMS_Service()
-        send_verification_sms(user, sms_service=sms_service)
+        try:
+            SMS_Service = import_string(settings.SMS_SERVICE)
+            sms_service = SMS_Service()
+            send_verification_sms(user, sms_service=sms_service)
+        except Exception as ex:
+            raise ValueError("Set correct SMS_SERVICE env variable")
 
         return Response({'message': 'Code was be sent by sms', 'status': "success", "otp_code": otp_code}, status=status.HTTP_200_OK)
 
