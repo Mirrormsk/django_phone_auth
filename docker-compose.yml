@@ -1,0 +1,53 @@
+version: "3.9"
+
+services:
+  db:
+
+    image: postgres:15-alpine
+    env_file:
+      - .env.docker
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    expose:
+      - "5432"
+
+  api:
+    command: >
+       bash -c "python manage.py collectstatic --noinput &&
+             python manage.py migrate &&
+             gunicorn -w 2 config.wsgi:application -b 0.0.0.0:8000"
+    platform: linux/amd64
+    build:
+      context: .
+    tty: false
+    volumes:
+      - .:/app
+
+    restart: on-failure
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.docker
+    depends_on:
+      db:
+        condition: service_healthy
+
+  nginx:
+    build: ./nginx
+
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    volumes:
+      - ./static:/home/www/static
+
+volumes:
+  api:
+  db:
+    driver: local
