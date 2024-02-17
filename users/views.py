@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.shortcuts import redirect
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -16,8 +17,9 @@ from users.permissions import IsOwner
 from users.serializers import MyTokenObtainPairSerializer, UserSerializer, UserLoginSerializer, VerifyPhoneSerializer, \
     InputInviteCodeSerializer
 from users.services.get_token import get_tokens_for_user
-from users.services.sms import send_verification_sms, MySMSService
+from users.services.sms import send_verification_sms
 from users.services.users import UserService
+from django.utils.module_loading import import_string
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -78,7 +80,8 @@ class LoginAPIView(APIView):
 
         otp_code = UserService.set_otp_code(user)
 
-        sms_service = MySMSService()
+        SMS_Service = import_string(settings.SMS_SERVICE)
+        sms_service = SMS_Service()
         send_verification_sms(user, sms_service=sms_service)
 
         return Response({'message': 'Code was be sent by sms', 'status': "success", "otp_code": otp_code}, status=status.HTTP_200_OK)
@@ -165,8 +168,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response({'message': 'Invite code successfully applied'}, status=status.HTTP_200_OK)
         else:
             return Response({'message': 'Invalid Invite Code'}, status=status.HTTP_400_BAD_REQUEST)
-
-
 
 
 class LoginView(APIView):
