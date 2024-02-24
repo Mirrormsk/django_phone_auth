@@ -53,4 +53,4 @@ def send_verification_sms(user: User, sms_service: AbstractSMSService) -> None:
         logger.exception(e)
     finally:
         user.last_code_sent_time = now
-        user.save()
+        user.save(update_fields=["last_code_sent_time"])
